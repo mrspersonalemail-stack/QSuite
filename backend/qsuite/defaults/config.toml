@@ -1,0 +1,24 @@
+# Public defaults. All installation-specific values are supplied during onboarding.
+mode = "production"
+access = "lan"
+bind = "127.0.0.1"
+port = 9080
+origin = "https://localhost:9443"
+terminal_enabled = false
+require_trusted_tls = true
+
+[services]
+qsuite = "qsuite-agent.service"
+qsecurity = "qsecurity.service"
+fail2ban = "fail2ban.service"
+
+[integration]
+# Optional adapters are disabled until audited. No Minecraft assumption is made.
+
+[security]
+trusted_cidrs = ["127.0.0.0/8", "::1/128"]
+trusted_countries = []
+trusted_continents = []
+enforce = false
+scan_roots = []
+protected_roots = ["/etc/ssh", "/etc/sudoers.d", "/etc/systemd/system"]
