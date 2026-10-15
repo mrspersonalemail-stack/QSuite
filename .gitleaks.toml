@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+# Two reviewed JavaScript class assignments in the checksum-pinned xterm vendor
+# bundle match generic-api-key. Match only those assignments, never the whole file.
+[[rules]]
+id = "generic-api-key"
+[[rules.allowlists]]
+regexTarget = "match"
+regexes = ['''\.FourKeyMap=''', '''\.SequencerByKey=''']

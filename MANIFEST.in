@@ -1,0 +1,14 @@
+include LICENSE README.md pyproject.toml requirements.lock .gitignore .gitleaks.toml
+include SECURITY.md CONTRIBUTING.md CODE_OF_CONDUCT.md CHANGELOG.md config.example.toml
+recursive-include backend/qsuite *.py *.html *.js *.css *.toml XTERM-LICENSE
+recursive-include docs *.md *.json *.png
+recursive-include tests *.py *.cjs
+recursive-include scripts *.py
+recursive-include packaging *.in *.service *.timer
+recursive-include frontend *.json XTERM-LICENSE
+recursive-include .github *.yml *.md
+prune .local
+prune deployments
+prune dist
+prune build
+global-exclude __pycache__ *.py[cod] *.db *.pem *.key *.cred .env
