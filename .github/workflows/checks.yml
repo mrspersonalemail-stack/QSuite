@@ -1,0 +1,76 @@
+name: QSuite isolated checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['debian:bookworm', 'debian:trixie', 'ubuntu:24.04', 'ubuntu:26.04']
+    container: ${{ matrix.image }}
+    steps:
+      - name: Prepare isolated distro runtime
+        run: |
+          apt-get update
+          apt-get install -y python3 python3-venv python3-pip nodejs git ca-certificates openssl dpkg-dev
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install locked runtime and development tools
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --require-hashes -r requirements.lock
+          .venv/bin/pip install -e '.[test]' build pip-audit
+      - name: Defensive tests and source checks
+        run: |
+          .venv/bin/pytest -q
+          .venv/bin/ruff check backend tests scripts
+          .venv/bin/mypy --follow-imports=skip --ignore-missing-imports backend/qsuite/config.py backend/qsuite/permissions.py backend/qsuite/notifications.py
+          .venv/bin/pip check
+          node --check backend/qsuite/web/app.js
+          node --check backend/qsuite/web/ui.js
+          node --check backend/qsuite/web/center.js
+          node --test tests/frontend.test.cjs
+          .venv/bin/python scripts/check-release.py
+      - name: Dependency vulnerability check
+        run: .venv/bin/pip-audit --disable-pip --no-deps -r requirements.lock
+      - name: Build and inspect Python/Debian payload
+        run: |
+          .venv/bin/python -m build
+          mkdir -p dist/wheelhouse
+          .venv/bin/pip download --require-hashes --only-binary=:all: -r requirements.lock -d dist/wheelhouse
+          cp dist/qsuite-1.0.0-py3-none-any.whl dist/wheelhouse/
+          MINOR=$(python3 -c 'import sys; print(sys.version_info.minor)')
+          .venv/bin/python scripts/build-deb.py --wheelhouse dist/wheelhouse --architecture amd64 --python-minor "$MINOR" --output dist
+          dpkg-deb --info dist/*.deb
+          dpkg-deb --contents dist/*.deb
+          .venv/bin/python scripts/inspect-artifacts.py dist
+          python3 -m venv .smoke-venv
+          .smoke-venv/bin/pip install --no-index --find-links dist/wheelhouse qsuite==1.0.0
+          .smoke-venv/bin/python -I scripts/smoke-package.py
+          .smoke-venv/bin/pip check
+          sha256sum dist/*.whl dist/*.tar.gz dist/*.deb > dist/SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: candidate-${{ strategy.job-index }}
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/*.deb
+            dist/SHA256SUMS
+  # Container checks do not qualify PID-1 install/start/upgrade/removal/reboot.
+  # Run the documented lifecycle drill in disposable systemd VMs before release.
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Scan public files and all reachable history
+        run: |
+          curl -fL --retry 3 -o /tmp/gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  /tmp/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks dir . --redact --no-banner
+          /tmp/gitleaks git . --redact --no-banner --log-opts=--all
