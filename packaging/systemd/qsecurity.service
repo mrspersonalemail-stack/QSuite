@@ -1,0 +1,36 @@
+[Unit]
+Description=QSecurity independent SSH and integrity observer
+After=local-fs.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/qsuite/current
+Environment=QSUITE_CONFIG=/etc/qsuite/config.toml
+Environment=PYTHONNOUSERSITE=1
+ExecStart=/opt/qsuite/current/venv/bin/qsecurity daemon
+Restart=on-failure
+RestartSec=15
+UMask=0077
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/qsecurity
+MemoryMax=192M
+TasksMax=32
+Nice=15
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target
