@@ -1,0 +1,20 @@
+name: Feature request
+description: Describe a problem and a scoped improvement.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should QSuite solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior and alternatives
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Permissions, safety and recovery considerations
+      description: Include affected roles and failure behavior. Do not share deployment secrets.
