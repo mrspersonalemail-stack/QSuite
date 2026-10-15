@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101519">
+<title>QSuite · Server operations</title><link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/xterm.css"><script src="/assets/xterm.js" defer></script><script src="/assets/ui.js" defer></script><script src="/assets/app.js" defer></script><script src="/assets/center.js" defer></script></head>
+<body>
+<a href="#content" class="skip-link">Skip to content</a>
+<div id="notice" role="status" hidden></div>
+<main id="login" class="login">
+  <div class="login-brand"><span class="mark">Q</span><span>QSuite<small>SERVER CONTROL</small></span><span class="login-badge">SECURE ACCESS</span></div>
+  <div class="eyebrow">YOUR SERVER. CLEAR CONTROL.</div><h1>Operations start here.</h1>
+  <p class="muted">Sign in to your server's management account.</p>
+  <form id="login-form"><label>Username<input name="username" autocomplete="username" maxlength="32" required></label>
+  <label>Password<input name="password" type="password" autocomplete="current-password" maxlength="256" required></label>
+  <label>2FA or recovery code <span class="muted">if enabled</span><input name="otp" autocomplete="one-time-code" maxlength="128"></label>
+  <button type="submit">Sign in</button><p id="login-error" role="alert"></p></form>
+  <p class="fine">No account yet? Create your owner account directly on the server with <code>sudo qsuite user add</code>.</p>
+</main>
+<div id="shell" class="shell" hidden>
+  <aside id="sidebar"><div class="brand-row"><a class="brand" href="/"><span class="mark">Q</span>QSuite<span class="version">02</span></a><button id="mobile-menu" class="quiet mobile-menu" aria-expanded="false" aria-controls="navigation-panel"><span aria-hidden="true">☰</span> Menu</button></div>
+    <div id="navigation-panel" class="navigation-panel">
+    <nav id="nav" aria-label="Primary navigation"></nav>
+    <div class="sidebar-foot"><span class="dot"></span> <span id="connection">Connected</span><small id="identity"></small><button id="logout" class="quiet">Sign out</button></div>
+    </div>
+  </aside>
+  <div class="workspace"><header><div class="breadcrumb">CONTROL ROOM <span>/</span> <b id="page-name">Dashboard</b></div>
+    <div class="header-tools"><span id="access" class="pill">ACCOUNT</span><button id="theme" class="quiet" aria-label="Change color theme">◐</button><button id="refresh" class="quiet">Refresh</button></div></header>
+    <section class="page-heading"><div><div class="eyebrow">QSUITE / SERVER OPERATIONS</div><h1 id="heading">System overview</h1><p id="subtitle" class="muted">Live state. Evidence where it matters.</p></div><div id="updated" class="fine"></div></section>
+    <section id="content" aria-live="polite" tabindex="-1"></section>
+    <footer>QSuite <span id="version">0.1.0</span><span>Workload lifecycle remains with its existing manager.</span></footer>
+  </div>
+</div>
+<dialog id="reauth"><form id="reauth-form"><h2>Confirm your identity</h2><p class="muted">Fresh authentication protects sensitive operations.</p>
+  <label>Password<input name="password" type="password" autocomplete="current-password" maxlength="256" required></label>
+  <label>2FA or recovery code<input name="otp" autocomplete="one-time-code" maxlength="128"></label><p id="reauth-error" role="alert"></p>
+  <div class="actions"><button type="button" id="reauth-cancel" class="quiet">Cancel</button><button type="submit">Authenticate</button></div>
+</form></dialog>
+</body></html>
