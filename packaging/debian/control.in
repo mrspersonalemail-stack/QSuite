@@ -1,0 +1,11 @@
+Package: qsuite
+Version: @VERSION@
+Architecture: @ARCH@
+Maintainer: QSuite contributors
+Depends: python3 (@PYMIN@), python3 (@PYMAX@), python3-venv, ca-certificates, openssl, systemd
+Section: admin
+Priority: optional
+Description: QSuite authenticated server management foundations
+ Explicit operations, local accounts, SQLite state, a closed privilege broker,
+ web monitoring, isolated terminal transport and independent security observation.
+ This initial release does not enable WAN or start services automatically.
