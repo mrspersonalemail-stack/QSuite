@@ -1,0 +1,46 @@
+name: Bug report
+description: Report reproducible QSuite behavior without private data.
+body:
+  - type: markdown
+    attributes:
+      value: "Do not post passwords, cookies, tokens, webhooks, keys, IP inventories or raw logs/databases. For security flaws read SECURITY.md."
+  - type: input
+    id: version
+    attributes:
+      label: QSuite version
+      description: Output of qsuite version
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: OS, Python and architecture
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version, if relevant
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Review every line before posting. Do not attach production state.
