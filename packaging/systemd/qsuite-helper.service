@@ -1,0 +1,42 @@
+[Unit]
+Description=QSuite closed privileged operation broker
+After=local-fs.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=root
+Group=qsuite
+WorkingDirectory=/opt/qsuite/current
+Environment=QSUITE_CONFIG=/etc/qsuite/config.toml
+Environment=PYTHONNOUSERSITE=1
+ExecStart=/opt/qsuite/current/venv/bin/qsuite-helper
+RuntimeDirectory=qsuite-helper
+RuntimeDirectoryMode=0750
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=10
+UMask=0077
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE CAP_DAC_READ_SEARCH CAP_FOWNER CAP_KILL CAP_SETUID CAP_SETGID CAP_SYS_PTRACE CAP_SYS_RAWIO
+AmbientCapabilities=CAP_SETUID CAP_SETGID
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=false
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+ReadWritePaths=/run/qsuite-helper /var/lib/qsecurity /var/lib/qsuite-terminal
+# Audited legacy adapters require explicit installation-specific ReadWritePaths.
+MemoryMax=2G
+TasksMax=192
+LimitNOFILE=1024
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

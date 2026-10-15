@@ -1,0 +1,29 @@
+[Unit]
+Description=Independent QSecurity availability watchdog
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/qsuite/current
+Environment=QSUITE_CONFIG=/etc/qsuite/config.toml
+Environment=PYTHONNOUSERSITE=1
+ExecStart=/opt/qsuite/current/venv/bin/qsuite-watchdog
+UMask=0077
+TimeoutStartSec=20
+NoNewPrivileges=true
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/qsuite-watchdog
+MemoryMax=128M
+TasksMax=16
+LimitCORE=0

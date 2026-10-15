@@ -1,0 +1,42 @@
+[Unit]
+Description=QSuite authenticated management API
+After=network.target qsuite-helper.service
+Wants=qsuite-helper.service
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=qsuite
+Group=qsuite
+WorkingDirectory=/opt/qsuite/current
+Environment=QSUITE_CONFIG=/etc/qsuite/config.toml
+Environment=PYTHONNOUSERSITE=1
+ExecStart=/opt/qsuite/current/venv/bin/qsuite-agent
+LoadCredential=auth-key:/etc/qsuite/secrets/auth-key
+# An installation drop-in adds LoadCredential=tls-key:<audited private-key path>.
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+ReadWritePaths=/var/lib/qsuite
+MemoryMax=512M
+TasksMax=96
+LimitNOFILE=1024
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

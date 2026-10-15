@@ -1,0 +1,11 @@
+[Unit]
+Description=Check QSecurity independently every two minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+RandomizedDelaySec=15s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
