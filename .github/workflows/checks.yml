@@ -43,6 +43,9 @@ jobs:
         run: |
           umask 022
           git ls-files -z | xargs -0 chmod go-w
+          # Editable test installation may leave metadata with the runner's
+          # permissive umask. Recreate only generated packaging state.
+          rm -rf build backend/qsuite.egg-info
           export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
           .venv/bin/python -m build
           mkdir -p dist/wheelhouse
