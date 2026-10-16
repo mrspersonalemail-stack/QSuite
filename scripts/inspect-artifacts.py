@@ -24,7 +24,14 @@ def inspect(directory, dpkg_deb="dpkg-deb"):
         if archive.testzip() is not None:
             raise ValueError("wheel CRC failure")
         names = archive.namelist()
-        if any((item.external_attr >> 16) & 0o022 for item in archive.infolist()):
+        # WheelFile writes its generated RECORD hash index with mode 0664.
+        # That upstream metadata convention is not an executable/code payload;
+        # pip's install umask controls the installed file's actual permissions.
+        # Keep the exception exact and reject writable code/data or world write.
+        if any((item.external_attr >> 16) & 0o022
+               and not (item.filename == f"qsuite-{version}.dist-info/RECORD"
+                        and ((item.external_attr >> 16) & 0o777) == 0o664)
+               for item in archive.infolist()):
             raise ValueError("writable application wheel member")
         if any(n.startswith("/") or ".." in Path(n).parts or not n.startswith(("qsuite/", f"qsuite-{version}.dist-info/")) for n in names):
             raise ValueError("unexpected wheel payload")
