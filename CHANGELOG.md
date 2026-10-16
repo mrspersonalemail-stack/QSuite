@@ -1,6 +1,6 @@
 # QSuite 1.0.0
 
-Prepared first public release; publication remains subject to the release checklist.
+Initial public release — 16 October 2026. See the [validation record](docs/release-readiness.md).
 
 ## Added
 
@@ -30,11 +30,14 @@ Prepared first public release; publication remains subject to the release checkl
 
 - Canonical version metadata, offline ABI-specific Debian payload and verified wheel manifest.
 - Data-preserving removal with a self-contained post-removal script; active QSuite unit resume.
+- Safe runtime creation under permissive umasks/inherited ACLs; untrusted existing code is rejected before execution.
+- Real installed-service qualification on disposable Ubuntu 24.04/26.04 VMs.
 - Public examples, complete guide index, contributor/issue templates and release checks.
 
 ## Known limitations
 
-No stable platform qualification is claimed until clean systemd lifecycle drills pass.
+Ubuntu 24.04/26.04 amd64 clean installation and same-version reinstall/removal are qualified.
+Debian systemd lifecycle, reboot/power-loss and real mobile/terminal acceptance remain unqualified.
 Automatic containment, protected quarantine, geolocation provider, root terminal,
 native backup creation and automated full rollback remain unavailable. Minecraft/Crafty
 is optional; manager service controls are not per-server game lifecycle controls.

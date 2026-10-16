@@ -1,8 +1,8 @@
 # Implementation status
 
-This document describes the prepared v1.0.0 source, not an independently certified
-or fully qualified production release. [Release gates](release-readiness.md) decide
-whether it may be published as stable.
+This document describes QSuite v1.0.0. It is not an independent certification.
+The [validation record](release-readiness.md) defines the tested platform scope
+and remaining qualification limits.
 
 ## Implemented
 
@@ -28,7 +28,8 @@ lockdown, geolocation lookup dataset, full sudo/transfer attribution, protected
 malware quarantine, scheduled full-device scanning, passkeys, encrypted offsite
 replication and fully automated software/database rollback are unavailable.
 
-Fresh-install/upgrade/removal/reboot/failure drills under a real target systemd
-instance remain qualification work until recorded. A prior pilot or passing
-container/API suite does not prove those gates. GUI access-mode changes remain
-local CLI only; TLS trust policy can be changed by an authorized Owner.
+Fresh install, real service startup, same-version reinstall/resume and removal/purge
+are qualified on Ubuntu 24.04/26.04 amd64. Application schema migration/recovery
+paths have automated tests. Cross-version binary upgrades, reboot/power-loss and
+real mobile/separate-terminal acceptance remain qualification work. GUI access-mode
+changes remain local CLI only; TLS trust policy can be changed by an authorized Owner.

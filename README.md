@@ -7,10 +7,10 @@ security observation, service operations and recovery workflows. QSuite brings
 common tasks into a responsive interface while keeping permissions and privileged
 operations on the server.
 
-**Release status:** v1.0.0 is being prepared. Stable publication is gated by the
-[release checklist](docs/release-readiness.md). No public package download is
-available until those gates pass. This project has not received an independent
-security audit or certification.
+**Current release:** [QSuite v1.0.0](https://github.com/mrspersonalemail-stack/QSuite/releases/tag/v1.0.0).
+Read the [installation guide](docs/installation.md) and
+[validation scope](docs/release-readiness.md). This project has not received an
+independent security audit or certification.
 
 Screenshots await an isolated browser review. Production screenshots are excluded
 to protect private host and account information.
@@ -44,11 +44,10 @@ permission or named security protocol is not proof of an implemented capability.
 
 ## Platform status
 
-QSuite targets systemd-based Debian and Ubuntu with Python 3.11 or newer.
-The predecessor build had an Ubuntu 26.04 amd64 / Python 3.14 pilot installation.
-That is not a clean-install qualification of v1.0.0. Debian 12/13 and Ubuntu 24.04
-are CI candidates, not claimed as validated platforms until those jobs pass.
-See [installation](docs/installation.md) for the exact qualification status.
+Release packages are qualified on systemd-based Ubuntu 24.04 amd64 / Python 3.12
+and Ubuntu 26.04 amd64 / Python 3.14. Debian 12/13 pass container tests and builds;
+their installed systemd lifecycle remains unqualified. Arch Linux is a development
+host. See [installation](docs/installation.md) for the exact platform and test scope.
 
 ## Quick start
 
@@ -57,14 +56,14 @@ Packages are built for one Python minor and architecture. Check that match befor
 installing a locally downloaded package:
 
 ```sh
-sha256sum -c SHA256SUMS
+sha256sum -c SHA256SUMS --ignore-missing
 sudo apt install ./qsuite_1.0.0_py314_amd64.deb
 qsuite version
 ```
 
-These commands describe the prepared artifact, not a published download. Installation
-creates isolated accounts and preserves managed workloads. Configure HTTPS and an
-Owner before explicitly starting the units. There is no default password and no
+Choose the package matching your system Python minor; use `py312` on Ubuntu 24.04.
+Installation creates isolated accounts and preserves managed workloads. Configure
+HTTPS and an Owner before explicitly starting the units. There is no default password and no
 remote shell installer. Keep an independent SSH or console recovery path.
 
 ## Documentation

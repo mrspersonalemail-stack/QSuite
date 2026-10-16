@@ -86,6 +86,11 @@ def qualify(package, report):
 
     install_package()
     require(run("qsuite", "version").strip() == "1.0.0", "CLI version mismatch")
+    for name in [*UNITS, "qsuite-watchdog.service"]:
+        info = (Path("/etc/systemd/system") / name).stat()
+        require(info.st_uid == 0 and not info.st_mode & 0o022, "installed systemd unit is writable/unowned")
+    key_info = Path("/etc/qsuite/secrets/auth-key").stat()
+    require(key_info.st_uid == 0 and not key_info.st_mode & 0o077, "authentication key permissions are unsafe")
     for unit in UNITS:
         require(not active(unit), "fresh install unexpectedly started services")
     evidence["clean_install"] = "pass; services initially stopped"

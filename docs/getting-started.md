@@ -76,5 +76,5 @@ recovery. QSuite does not create backups itself. Add optional
 
 Create additional accounts in **Users & permissions**. Start with the narrowest
 role and verify their direct API access. Review [access modes](access-modes.md)
-before exposing WAN. Finish with [release checks](release-readiness.md) on an
-isolated machine before relying on this candidate for production.
+before exposing WAN. Review the [validation scope](release-readiness.md) and check
+your own installation in isolation before relying on it for production.

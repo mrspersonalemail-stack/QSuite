@@ -2,9 +2,9 @@
 
 ## Release support
 
-v1.0.0 is in release preparation; no stable release is currently published.
-Once qualified, fixes target the latest 1.0.x release. Older development snapshots
-have no maintenance guarantee. No independent security audit or certification is
+QSuite v1.0.0 is the first stable release. Fixes target the latest 1.0.x release.
+Older development snapshots have no maintenance guarantee.
+No independent security audit or certification is
 claimed. Monitor releases and review changes before installing administrative tools.
 
 ## Responsible disclosure

@@ -1,7 +1,9 @@
 # Upgrading
 
-Qualification of full install/upgrade/failure rollback drills remains a release gate.
-Do not use an unqualified candidate as a routine production upgrade.
+Ubuntu 24.04/26.04 amd64 clean installation and same-version reinstall/resume are
+qualified for v1.0.0. Schema migration and failed-migration recovery are covered by
+automated tests. Older-version binary upgrades, reboot and full software/database
+rollback have not been qualified; preserve independent recovery copies.
 
 1. Read release notes, verify provenance, Python minor, architecture and checksum.
 2. Keep SSH/console access. Record active QSuite and managed-workload services.
