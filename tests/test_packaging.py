@@ -200,3 +200,66 @@ def test_package_rejects_unowned_interpreter_symlink():
                            lstat=lambda: SimpleNamespace(st_uid=1000))
     with pytest.raises(ValueError, match="symlink must be root-owned"):
         package.trusted_runtime_path(link)
+
+
+def test_owned_runtime_symlink_requires_trusted_target_ancestors():
+    import pytest
+
+    package = module("release_runtime_symlink_target", "package.py")
+    parent = SimpleNamespace(stat=lambda: SimpleNamespace(st_uid=0, st_mode=0o40777))
+    target = SimpleNamespace(parents=[parent], stat=lambda: SimpleNamespace(st_uid=0, st_mode=0o100755))
+    link = SimpleNamespace(parents=[], is_symlink=lambda: True,
+                           lstat=lambda: SimpleNamespace(st_uid=0), resolve=lambda **kw: target)
+    with pytest.raises(ValueError, match="untrusted runtime path"):
+        package.trusted_runtime_path(link)
+    parent.stat = lambda: SimpleNamespace(st_uid=0, st_mode=0o40755)
+    package.trusted_runtime_path(link)
+
+
+def test_wheel_record_exception_cannot_allow_writable_code():
+    inspector = module("release_wheel_mode_inspection", "inspect-artifacts.py")
+
+    def archive(name, mode):
+        entry = SimpleNamespace(filename=name, external_attr=mode << 16)
+        return SimpleNamespace(infolist=lambda: [entry])
+
+    assert not inspector.unsafe_wheel_modes(archive("qsuite-1.0.0.dist-info/RECORD", 0o100664), "1.0.0")
+    assert not inspector.unsafe_wheel_modes(archive("qsuite/api.py", 0o100644), "1.0.0")
+    assert inspector.unsafe_wheel_modes(archive("qsuite-1.0.0.dist-info/RECORD", 0o100666), "1.0.0")
+    assert inspector.unsafe_wheel_modes(archive("qsuite/api.py", 0o100664), "1.0.0")
+    assert inspector.unsafe_wheel_modes(archive("qsuite-0.0.0.dist-info/RECORD", 0o100664), "1.0.0")
+
+
+def test_new_runtime_clears_inherited_acl_before_becoming_readable(tmp_path, monkeypatch):
+    import errno
+    import struct
+    import pytest
+
+    package = module("release_inherited_acl", "package.py")
+    # Deliberately open default ACL on an OWNED isolated test directory.
+    acl = struct.pack("<I", 2) + b"".join(struct.pack("<HHI", tag, 7, 0xffffffff) for tag in (1, 4, 32))
+    try:
+        os.setxattr(tmp_path, "system.posix_acl_default", acl)
+    except OSError as exc:
+        if exc.errno == errno.ENOTSUP:
+            pytest.skip("filesystem does not implement POSIX ACLs")
+        raise
+    monkeypatch.setattr(package, "trusted_runtime_path", lambda p: None)  # isolate ACL behavior from test UID
+    path = tmp_path / "runtime"
+    before = os.umask(0o022)
+    try:
+        package.runtime_directory(path)
+        assert path.stat().st_mode & 0o777 == 0o755
+        with pytest.raises(OSError) as missing:
+            os.getxattr(path, "system.posix_acl_default")
+        assert missing.value.errno == errno.ENODATA
+        file = path / "code.py"
+        file.write_text("isolated fixture")
+        assert file.stat().st_mode & 0o777 == 0o644
+        # An existing inheritable ACL must be reviewed, never silently blessed.
+        os.setxattr(path, "system.posix_acl_default", acl)
+        with pytest.raises(ValueError, match="inheritable ACL"):
+            package.runtime_directory(path)
+        assert os.getxattr(path, "system.posix_acl_default") == acl
+    finally:
+        os.umask(before)

@@ -63,6 +63,7 @@ def qualify(package, report):
     opt = Path("/opt")
     require(not opt.is_symlink() and opt.stat().st_uid == 0, "unexpected runner /opt identity")
     original_opt_mode = opt.stat().st_mode & 0o777
+    inherited_opt_acl = "system.posix_acl_default" in os.listxattr(opt)
     opt.chmod(0o755)
     package = package.resolve(strict=True)
     require(sys.version_info.minor in {12, 14}
@@ -71,7 +72,8 @@ def qualify(package, report):
     evidence = {"os": platform.freedesktop_os_release()["PRETTY_NAME"],
                 "python": platform.python_version(), "architecture": platform.machine(),
                 "package": package.name, "sha256": hashlib.sha256(package.read_bytes()).hexdigest(),
-                "runner_opt_mode_before_hardening": oct(original_opt_mode)}
+                "runner_opt_mode_before_hardening": oct(original_opt_mode),
+                "runner_opt_has_default_acl": inherited_opt_acl}
 
     def install_package():
         # Exercise the actual regression: the package must impose its own safe

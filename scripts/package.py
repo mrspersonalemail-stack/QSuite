@@ -2,6 +2,7 @@
 """Data-preserving Debian package lifecycle. Runs under dpkg's root context."""
 
 import hashlib
+import errno
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,36 @@ import time
 
 UNITS = ["qsuite-agent.service", "qsuite-helper.service", "qsecurity.service", "qsuite-watchdog.timer"]
 STATE = Path("/var/lib/qsuite-watchdog")
+
+
+def no_default_acl(path):
+    try:
+        os.getxattr(path, "system.posix_acl_default")
+    except OSError as exc:
+        if exc.errno in {errno.ENODATA, errno.ENOTSUP}:
+            return
+        raise
+    raise ValueError("existing runtime has an inheritable ACL; local review required")
+
+
+def runtime_directory(path):
+    trusted_runtime_path(path)
+    if path.exists():
+        if not path.is_dir():
+            raise ValueError("runtime directory is not a directory")
+        no_default_acl(path)
+        return
+    # Default ACLs override umask. Start root-private so inherited named ACLs
+    # cannot create a writable window, then remove inheritance on OUR new dir.
+    path.mkdir(mode=0o700)
+    for attribute in ("system.posix_acl_access", "system.posix_acl_default"):
+        try:
+            os.removexattr(path, attribute)
+        except OSError as exc:
+            if exc.errno not in {errno.ENODATA, errno.ENOTSUP}:
+                raise
+    path.chmod(0o755)
+    trusted_runtime_path(path)
 
 
 def trusted_runtime_path(path):
@@ -113,11 +144,14 @@ def main():
             raise ValueError("wheel hash mismatch")
     destination = Path("/opt/qsuite") / version
     trusted_runtime_path(destination)
+    runtime_directory(destination.parent)
+    runtime_directory(destination)
     existing_venv = destination / "venv"
     if existing_venv.exists():
         for item in [existing_venv, *existing_venv.rglob("*")]:
             trusted_runtime_path(item)
-    destination.mkdir(parents=True, exist_ok=True, mode=0o755)
+            if item.is_dir():
+                no_default_acl(item)
     venv = destination / "venv"
     if not (venv / "bin/python").exists():
         subprocess.run(["/usr/bin/python3", "-m", "venv", str(venv)], check=True)  # noqa: S603
