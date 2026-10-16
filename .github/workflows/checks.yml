@@ -55,7 +55,7 @@ jobs:
           .smoke-venv/bin/pip install --no-index --find-links dist/wheelhouse qsuite==1.0.0
           .smoke-venv/bin/python -I scripts/smoke-package.py
           .smoke-venv/bin/pip check
-          sha256sum dist/*.whl dist/*.tar.gz dist/*.deb > dist/SHA256SUMS
+          (cd dist && sha256sum *.whl *.tar.gz *.deb > SHA256SUMS)
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: candidate-${{ strategy.job-index }}
