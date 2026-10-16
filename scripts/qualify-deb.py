@@ -24,7 +24,14 @@ UNITS = ["qsuite-helper.service", "qsuite-agent.service", "qsecurity.service", "
 
 
 def run(*argv):
-    return subprocess.check_output(argv, text=True, stderr=subprocess.STDOUT)  # noqa: S603
+    try:
+        return subprocess.check_output(argv, text=True, stderr=subprocess.STDOUT)  # noqa: S603
+    except subprocess.CalledProcessError as exc:
+        # dpkg runs only our public package lifecycle on this fresh VM. Keep its
+        # bounded install diagnostics; never print captured credential decrypts.
+        if argv[0] == "dpkg":
+            print(exc.stdout[-8000:], flush=True)
+        raise
 
 
 def require(condition, message):
