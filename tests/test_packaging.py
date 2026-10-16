@@ -159,3 +159,44 @@ def test_vm_qualification_refuses_non_hosted_environment_before_commands(tmp_pat
     monkeypatch.setattr(qualification, "run", lambda *a: (_ for _ in ()).throw(AssertionError("no mutation")))
     with pytest.raises(RuntimeError, match="disposable VM"):
         qualification.qualify(tmp_path / "unused.deb", tmp_path / "report.json")
+
+
+def test_runtime_trust_rejects_writable_or_unowned_ancestors():
+    import pytest
+    from qsuite.config import check_root_file
+
+    for uid, mode in [(0, 0o775), (1000, 0o755)]:
+        parent = SimpleNamespace(stat=lambda uid=uid, mode=mode: SimpleNamespace(st_uid=uid, st_mode=mode))
+        leaf = SimpleNamespace(is_symlink=lambda: False, parents=[parent],
+                               stat=lambda: SimpleNamespace(st_uid=0, st_mode=0o644))
+        with pytest.raises(ValueError, match="root-owned"):
+            check_root_file(leaf)
+    parent.stat = lambda: SimpleNamespace(st_uid=0, st_mode=0o755)
+    check_root_file(leaf)
+
+
+def test_package_checks_existing_runtime_before_executing_it():
+    import pytest
+
+    package = module("release_runtime_preflight", "package.py")
+    parent = SimpleNamespace(is_symlink=lambda: False, exists=lambda: True,
+                             stat=lambda: SimpleNamespace(st_uid=0, st_mode=0o40777))
+    leaf = SimpleNamespace(parents=[parent], is_symlink=lambda: False, exists=lambda: True,
+                           stat=lambda: SimpleNamespace(st_uid=0, st_mode=0o100644))
+    with pytest.raises(ValueError, match="untrusted runtime path"):
+        package.trusted_runtime_path(leaf)
+    parent.stat = lambda: SimpleNamespace(st_uid=1000, st_mode=0o40755)
+    with pytest.raises(ValueError, match="untrusted runtime path"):
+        package.trusted_runtime_path(leaf)
+    parent.stat = lambda: SimpleNamespace(st_uid=0, st_mode=0o40755)
+    package.trusted_runtime_path(leaf)
+
+
+def test_package_rejects_unowned_interpreter_symlink():
+    import pytest
+
+    package = module("release_runtime_symlink", "package.py")
+    link = SimpleNamespace(parents=[], is_symlink=lambda: True,
+                           lstat=lambda: SimpleNamespace(st_uid=1000))
+    with pytest.raises(ValueError, match="symlink must be root-owned"):
+        package.trusted_runtime_path(link)

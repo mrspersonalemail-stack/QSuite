@@ -41,6 +41,8 @@ jobs:
         run: .venv/bin/pip-audit --disable-pip --no-deps -r requirements.lock
       - name: Build and inspect Python/Debian payload
         run: |
+          umask 022
+          git ls-files -z | xargs -0 chmod go-w
           export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
           .venv/bin/python -m build
           mkdir -p dist/wheelhouse

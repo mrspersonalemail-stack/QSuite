@@ -57,14 +57,32 @@ def qualify(package, report):
     require(Path("/run/systemd/system").is_dir(), "real systemd is required")
     require(not any(Path(p).exists() for p in ("/etc/qsuite", "/opt/qsuite", "/var/lib/qsuite")),
             "refusing an existing installation")
+    os.umask(0o022)
+    # Hosted build images deliberately grant write access to /opt. Tighten only
+    # this fresh disposable VM to the trusted runtime-prefix requirement.
+    opt = Path("/opt")
+    require(not opt.is_symlink() and opt.stat().st_uid == 0, "unexpected runner /opt identity")
+    original_opt_mode = opt.stat().st_mode & 0o777
+    opt.chmod(0o755)
     package = package.resolve(strict=True)
     require(sys.version_info.minor in {12, 14}
             and package.name == f"qsuite_1.0.0_py3{sys.version_info.minor}_amd64.deb",
             "wrong qualification target")
     evidence = {"os": platform.freedesktop_os_release()["PRETTY_NAME"],
                 "python": platform.python_version(), "architecture": platform.machine(),
-                "package": package.name, "sha256": hashlib.sha256(package.read_bytes()).hexdigest()}
-    run("dpkg", "--install", str(package))
+                "package": package.name, "sha256": hashlib.sha256(package.read_bytes()).hexdigest(),
+                "runner_opt_mode_before_hardening": oct(original_opt_mode)}
+
+    def install_package():
+        # Exercise the actual regression: the package must impose its own safe
+        # runtime umask even when its caller supplies the most permissive one.
+        before = os.umask(0)
+        try:
+            run("dpkg", "--install", str(package))
+        finally:
+            os.umask(before)
+
+    install_package()
     require(run("qsuite", "version").strip() == "1.0.0", "CLI version mismatch")
     for unit in UNITS:
         require(not active(unit), "fresh install unexpectedly started services")
@@ -139,7 +157,7 @@ def qualify(package, report):
     saved_config = config.read_bytes()
     key = Path("/etc/qsuite/secrets/auth-key")
     saved_key = key.read_bytes()
-    run("dpkg", "--install", str(package))
+    install_package()
     for unit in UNITS:
         run("systemctl", "is-active", "--quiet", unit)
     require(config.read_bytes() == saved_config and key.read_bytes() == saved_key,

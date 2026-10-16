@@ -3,15 +3,40 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import platform
 import re
+import stat
 import subprocess
 import sys
 import time
 
 UNITS = ["qsuite-agent.service", "qsuite-helper.service", "qsecurity.service", "qsuite-watchdog.timer"]
 STATE = Path("/var/lib/qsuite-watchdog")
+
+
+def trusted_runtime_path(path):
+    """Verify existing code and ancestors before executing any venv entrypoint.
+
+    Do not chmod an untrusted existing runtime into an approved one. Root-owned
+    venv interpreter/lib symlinks are allowed only with fully trusted targets.
+    """
+    for part in [path, *path.parents]:
+        if part.is_symlink():
+            if part.lstat().st_uid != 0:
+                raise ValueError("runtime symlink must be root-owned")
+            resolved = part.resolve(strict=True)
+            candidates = [resolved, *resolved.parents]
+        elif part.exists():
+            candidates = [part]
+        else:
+            continue
+        for candidate in candidates:
+            info = candidate.stat()
+            if (info.st_uid != 0 or info.st_mode & 0o022
+                    or not (stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode))):
+                raise ValueError(f"untrusted runtime path: {candidate}; require root ownership and no group/world write")
 
 
 def active_units():
@@ -68,6 +93,9 @@ def main():
         raise ValueError("installation requires Debian or Ubuntu")
     if not Path("/run/systemd/system").is_dir():
         raise ValueError("installation requires a running systemd service manager")
+    # Package managers/callers can supply umask 000. All privileged runtime
+    # directories and pip-created files must still be non-writable to others.
+    os.umask(0o022)
     base = Path("/usr/lib/qsuite")
     version = (base / "VERSION").read_text().strip()
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version):
@@ -84,6 +112,11 @@ def main():
         if hashlib.sha256((base / "wheelhouse" / name).read_bytes()).hexdigest() != expected:
             raise ValueError("wheel hash mismatch")
     destination = Path("/opt/qsuite") / version
+    trusted_runtime_path(destination)
+    existing_venv = destination / "venv"
+    if existing_venv.exists():
+        for item in [existing_venv, *existing_venv.rglob("*")]:
+            trusted_runtime_path(item)
     destination.mkdir(parents=True, exist_ok=True, mode=0o755)
     venv = destination / "venv"
     if not (venv / "bin/python").exists():
