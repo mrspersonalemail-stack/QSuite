@@ -31,6 +31,11 @@ def run(*argv):
         # bounded install diagnostics; never print captured credential decrypts.
         if argv[0] == "dpkg":
             print(exc.stdout[-8000:], flush=True)
+            installed = Path(f"/opt/qsuite/current/venv/lib/python3.{sys.version_info.minor}/site-packages/qsuite/installer.py").resolve()
+            for path in [installed, *installed.parents]:
+                if path.exists():
+                    info = path.stat()
+                    print(f"runtime trust diagnostic: {path}: uid={info.st_uid} mode={info.st_mode & 0o777:o}")
         raise
 
 
