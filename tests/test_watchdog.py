@@ -13,6 +13,9 @@ def prepare(settings, tmp_path, monkeypatch, state="active", enabled="enabled", 
     watchdog.atomic(directory / "baseline.json", code)
     monkeypatch.setattr(watchdog, "fingerprints", lambda: code)
     monkeypatch.setattr(watchdog, "trusted_heartbeat", lambda path: True)
+    # Fresh CI runners can have less than 120 seconds of host uptime. Model an
+    # established engine explicitly instead of depending on the runner's clock.
+    monkeypatch.setattr(watchdog.time, "monotonic", lambda: 1000)
     output = f"ActiveState={state}\nUnitFileState={enabled}\nActiveEnterTimestampMonotonic=1\n"
     monkeypatch.setattr(
         watchdog.subprocess, "run", lambda *a, **k: SimpleNamespace(stdout=output, returncode=0)
@@ -56,6 +59,14 @@ def test_watchdog_rejects_untrusted_heartbeat(settings, tmp_path, monkeypatch):
 
 def test_watchdog_missing_heartbeat_is_not_healthy(settings, tmp_path, monkeypatch):
     directory = prepare(settings, tmp_path, monkeypatch, heartbeat=False)
+    assert "unreadable" in watchdog.check(settings, state_dir=directory)["state"]
+
+
+def test_watchdog_allows_startup_grace_only_until_deadline(settings, tmp_path, monkeypatch):
+    directory = prepare(settings, tmp_path, monkeypatch, heartbeat=False)
+    monkeypatch.setattr(watchdog.time, "monotonic", lambda: 60)
+    assert watchdog.check(settings, state_dir=directory)["state"] == "healthy"
+    monkeypatch.setattr(watchdog.time, "monotonic", lambda: 121)
     assert "unreadable" in watchdog.check(settings, state_dir=directory)["state"]
 
 

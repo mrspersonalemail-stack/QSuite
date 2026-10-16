@@ -147,3 +147,15 @@ def test_failed_resume_preserves_recovery_state(tmp_path, monkeypatch):
     state.write_text(json.dumps(["ssh.service"]))
     with pytest.raises(ValueError, match="resume state"):
         package.resume_units(tmp_path)
+
+
+def test_vm_qualification_refuses_non_hosted_environment_before_commands(tmp_path, monkeypatch):
+    import pytest
+
+    qualification = module("release_vm_qualification", "qualify-deb.py")
+    monkeypatch.setattr(qualification.os, "geteuid", lambda: 0)
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "self-hosted")
+    monkeypatch.setenv("QSUITE_DISPOSABLE_QUALIFICATION", "yes")
+    monkeypatch.setattr(qualification, "run", lambda *a: (_ for _ in ()).throw(AssertionError("no mutation")))
+    with pytest.raises(RuntimeError, match="disposable VM"):
+        qualification.qualify(tmp_path / "unused.deb", tmp_path / "report.json")

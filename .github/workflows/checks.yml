@@ -2,6 +2,9 @@ name: QSuite isolated checks
 on: [push, pull_request]
 permissions:
   contents: read
+concurrency:
+  group: isolated-checks-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -16,6 +19,8 @@ jobs:
           apt-get update
           apt-get install -y python3 python3-venv python3-pip nodejs git ca-certificates openssl dpkg-dev
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Trust only the mounted checkout in this disposable container
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Install locked runtime and development tools
         run: |
           python3 -m venv .venv
@@ -36,6 +41,7 @@ jobs:
         run: .venv/bin/pip-audit --disable-pip --no-deps -r requirements.lock
       - name: Build and inspect Python/Debian payload
         run: |
+          export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
           .venv/bin/python -m build
           mkdir -p dist/wheelhouse
           .venv/bin/pip download --require-hashes --only-binary=:all: -r requirements.lock -d dist/wheelhouse
@@ -59,7 +65,48 @@ jobs:
             dist/*.deb
             dist/SHA256SUMS
   # Container checks do not qualify PID-1 install/start/upgrade/removal/reboot.
-  # Run the documented lifecycle drill in disposable systemd VMs before release.
+  # The separate hosted VM job below qualifies an actual Ubuntu systemd install.
+
+  installed-lifecycle:
+    needs: tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            artifact: candidate-2
+            minor: 12
+          - runner: ubuntu-26.04
+            artifact: candidate-3
+            minor: 14
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: qualified
+      - name: Prepare fresh hosted VM dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-venv openssl ca-certificates
+          cd qualified
+          sha256sum -c SHA256SUMS
+      - name: Qualify installed services and package lifecycle on disposable VM
+        run: |
+          sudo env RUNNER_ENVIRONMENT=github-hosted QSUITE_DISPOSABLE_QUALIFICATION=yes \
+            /usr/bin/python3 scripts/qualify-deb.py qualified/qsuite_1.0.0_py3${{ matrix.minor }}_amd64.deb \
+            --report "$GITHUB_WORKSPACE/qualification.json"
+      - name: Service diagnostics on failure
+        if: failure()
+        run: |
+          sudo systemctl status qsuite-helper qsuite-agent qsecurity qsuite-watchdog.timer --no-pager || true
+          sudo journalctl -u qsuite-agent -u qsuite-helper -u qsecurity -n 80 --no-pager
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: installed-qualification-${{ matrix.minor }}
+          path: qualification.json
+          if-no-files-found: error
 
   secrets:
     runs-on: ubuntu-latest
