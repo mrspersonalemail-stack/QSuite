@@ -173,7 +173,9 @@ def qualify(package, report):
     require(json.loads(request("/api/v1/auth/me")[2])["role"] == "owner", "reinstall lost account/session")
     require(request("/api/v1/auth/logout", {}, csrf=True)[0] == 200, "authenticated logout failed")
     evidence["same_version_reinstall_resume_preservation"] = "pass"
-    run("/opt/qsuite/current/venv/bin/python", str(Path(__file__).with_name("qualify-network-guard.py").resolve()))
+    # This child uses only synthetic network fixtures, never the Owner password.
+    # Preserve its bounded diagnostics instead of hiding them in check_output.
+    subprocess.run(["/opt/qsuite/current/venv/bin/python", str(Path(__file__).with_name("qualify-network-guard.py").resolve())], check=True)  # noqa: S603
     evidence["vpn_native_ipv4_ipv6_lifecycle"] = "pass; synthetic veth packets, exceptions, reload, disable, offline restore"
     run("dpkg", "--remove", "qsuite")
     run("dpkg", "--purge", "qsuite")

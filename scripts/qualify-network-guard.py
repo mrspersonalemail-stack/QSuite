@@ -16,7 +16,7 @@ from qsuite.package_config import current, operation, atomic
 def run(*argv, required=True):
     result = subprocess.run(argv, text=True, capture_output=True, timeout=90)  # noqa: S603 -- fixed fixture commands
     if required and result.returncode:
-        raise RuntimeError("native network qualification command failed: " + argv[0])
+        raise RuntimeError("native network qualification command failed: " + argv[0] + ": " + result.stderr[-2000:])
     return result
 
 
