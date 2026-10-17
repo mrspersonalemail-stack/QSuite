@@ -26,6 +26,7 @@ Start with **Installation → Getting started → Access modes**. Commands marke
 | [Security](security.md) | Threat model and defensive controls |
 | [Development](development.md) | Local environment, tests and packaging |
 | [Release readiness](release-readiness.md) | Evidence and publication blockers |
+| [v1.1.0 validation](release-readiness-v1.1.0.md) | Current release gates and VPN packet qualification |
 
 [Responsible disclosure](../SECURITY.md) · [Contributing](../CONTRIBUTING.md) ·
 [Implementation status](implementation-status.md)

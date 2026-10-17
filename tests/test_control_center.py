@@ -38,7 +38,7 @@ def test_player_presets_deny_private_apis(client, app, role):
         result = client.get("/api/v1/" + path)
         assert result.status_code in {403, 404}, (path, result.text)
         assert "isolated-test-fixture" not in result.text
-    assert client.get("/api/v1/settings").json() == {"version": "1.0.0"}
+    assert client.get("/api/v1/settings").json() == {"version": "1.1.0"}
 
 
 @pytest.mark.parametrize("role", ["owner", "admin", "mod", "helper", "log_viewer"])

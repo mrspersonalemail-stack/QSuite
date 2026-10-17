@@ -18,6 +18,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from urllib.parse import urlsplit
 
 from .config import check_root_file, load
 from .package_config import atomic
@@ -36,6 +37,18 @@ SOURCES = {
 }
 
 
+class GuardError(ValueError):
+    """Only reviewed, non-secret operator diagnostics may use this exception."""
+
+
+class SameOriginRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        before, after = urlsplit(req.full_url), urlsplit(newurl)
+        if after.scheme != "https" or after.netloc != before.netloc:
+            raise GuardError("feed redirect to a different origin refused")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def run(argv, *, data=None, required=True):
     result = subprocess.run(  # noqa: S603 -- only fixed commands, validated IP literals and local paths
         argv, input=data, text=True, capture_output=True, timeout=90,
@@ -43,16 +56,16 @@ def run(argv, *, data=None, required=True):
     )
     if required and result.returncode:
         print(Path(argv[0]).name + " diagnostic: " + result.stderr[-1500:], file=sys.stderr)
-        raise ValueError(Path(argv[0]).name + " failed; inspect the dedicated service journal")
+        raise GuardError(Path(argv[0]).name + " failed; inspect the dedicated service journal")
     return result
 
 
 def network(value, family=None):
     item = ipaddress.ip_network(value, strict=True)
     if not item.is_global or item.prefixlen < (12 if item.version == 4 else 24):
-        raise ValueError("non-public or excessively broad network in feed")
+        raise GuardError("non-public or excessively broad network in feed")
     if family and item.version != family:
-        raise ValueError("feed address family mismatch")
+        raise GuardError("feed address family mismatch")
     return item
 
 
@@ -60,13 +73,13 @@ def cache():
     path = ROOT / "cache.json"
     check_root_file(path)
     if path.stat().st_size > 8_000_000:
-        raise ValueError("oversized cached feeds")
+        raise GuardError("oversized cached feeds")
     value = json.loads(path.read_text())
     if set(value.get("feeds", {})) != set(SOURCES):
-        raise ValueError("incomplete cached feeds")
+        raise GuardError("incomplete cached feeds")
     for name, rows in value["feeds"].items():
         if not SOURCES[name][1] <= len(rows) <= 100_000:
-            raise ValueError("invalid cached feed size")
+            raise GuardError("invalid cached feed size")
         for row in rows:
             network(row, 4 if name == "vpn4" else 6 if name == "vpn6" else None)
     return value
@@ -74,15 +87,15 @@ def cache():
 
 def download(previous=None):
     feeds, digests = {}, {}
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), SameOriginRedirect())
     for name, (url, minimum) in SOURCES.items():
         req = urllib.request.Request(url, headers={"User-Agent": "QSuite-NetworkGuard/1"})  # noqa: S310 -- constant HTTPS sources
         with opener.open(req, timeout=25) as response:  # noqa: S310 -- fixed HTTPS source allowlist
             if response.geturl().split("/", 3)[:3] != url.split("/", 3)[:3]:
-                raise ValueError("unexpected feed redirect")
+                raise GuardError("unexpected feed redirect")
             raw = response.read(6_000_001)
         if len(raw) > 6_000_000:
-            raise ValueError("oversized feed")
+            raise GuardError("oversized feed")
         if name == "proxies":
             records = json.loads(raw)
             # Exit addresses are what the destination observes, even behind chained proxies.
@@ -94,11 +107,11 @@ def download(previous=None):
         family = 4 if name == "vpn4" else 6 if name == "vpn6" else None
         nets = {network(row, family) for row in rows}
         if not minimum <= len(nets) <= 100_000:
-            raise ValueError("feed size outside safety bounds")
+            raise GuardError("feed size outside safety bounds")
         if previous and name.startswith("vpn"):
             old = len(previous["feeds"][name])
             if len(nets) < old / 2 or len(nets) > old * 2:
-                raise ValueError("abrupt VPN feed size change; previous lists retained")
+                raise GuardError("abrupt VPN feed size change; previous lists retained")
         feeds[name] = [str(n) for n in sorted(nets, key=lambda n: (n.version, int(n.network_address), n.prefixlen))]
         digests[name] = hashlib.sha256(raw).hexdigest()
     return {"updated": time.time(), "feeds": feeds, "sha256": digests}
@@ -142,7 +155,7 @@ def remove_block(text):
     if BEGIN not in text and END not in text:
         return text
     if text.count(BEGIN) != 1 or text.count(END) != 1:
-        raise ValueError("ambiguous managed UFW block")
+        raise GuardError("ambiguous managed UFW block")
     before, rest = text.split(BEGIN)
     _, after = rest.split(END)
     return before + after
@@ -176,12 +189,12 @@ def firewall(enabled):
                 if name.endswith(".rules"):
                     marker = "# End required lines\n"
                     if clean.count(marker) != 1:
-                        raise ValueError("unrecognized UFW framework layout")
+                        raise GuardError("unrecognized UFW framework layout")
                     after = clean.replace(marker, marker + rule_block(name == "before6.rules"), 1)
                 else:
                     marker = 'case "$1" in'
                     if clean.count(marker) != 1:
-                        raise ValueError("unrecognized UFW init hook")
+                        raise GuardError("unrecognized UFW init hook")
                     fallback = "".join(
                         f"        /usr/sbin/ipset create {n} hash:net family {family} maxelem 262144 -exist\n"
                         for n, family in (("qng_deny4", "inet"), ("qng_deny6", "inet6"),
@@ -198,7 +211,7 @@ def firewall(enabled):
                 run(["/usr/sbin/" + program, "--test", "--noflush"], data=(UFW / name).read_text())
             run(["/usr/sbin/ufw", "reload"])
             if observed() != enabled:
-                raise ValueError("effective UFW VPN policy failed verification")
+                raise GuardError("effective UFW VPN policy failed verification")
     except BaseException:
         for path, (text, mode) in old.items():
             atomic(path, text, mode)
@@ -233,7 +246,7 @@ def status(settings):
     if path.exists():
         check_root_file(path)
         if path.stat().st_size > 16384:
-            raise ValueError("network protection status too large")
+            raise GuardError("network protection status too large")
         saved = json.loads(path.read_text())
         if saved.get("boot_id") == Path("/proc/sys/kernel/random/boot_id").read_text().strip():
             result.update({k: saved[k] for k in ("active", "phase", "updated", "observed", "feed_counts")})
@@ -255,7 +268,7 @@ def check_management(values):
         denied = any(address in n for n in values["qng_deny" + str(address.version)])
         allowed = any(address in n for n in values["qng_allow" + str(address.version)])
         if denied and not allowed:
-            raise ValueError("current SSH peer is listed; add a narrow VPN exception before enabling")
+            raise GuardError("current SSH peer is listed; add a narrow VPN exception before enabling")
 
 
 def execute(action):
@@ -263,7 +276,7 @@ def execute(action):
     if action == "status":
         return status(settings)
     if os.geteuid() != 0:
-        raise ValueError("network operations require local root or the dedicated service")
+        raise GuardError("network operations require local root or the dedicated service")
     ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
     check_root_file(ROOT)
     with (ROOT / ".lock").open("a") as lock:
@@ -277,13 +290,18 @@ def execute(action):
                 run(["/usr/bin/systemctl", "disable", "--now", TIMER])
             return save_status(settings)
         if not all(shutil.which(p) for p in ("ufw", "ipset", "iptables", "ip6tables")):
-            raise ValueError("install UFW and ipset before enabling protection")
+            raise GuardError("install UFW and ipset before enabling protection")
         if "Status: active" not in run(["/usr/sbin/ufw", "status"]).stdout:
-            raise ValueError("UFW must already be active; QSuite will not enable/reset it")
-        previous = cache() if (ROOT / "cache.json").exists() else None
+            raise GuardError("UFW must already be active; QSuite will not enable/reset it")
+        try:
+            previous = cache() if (ROOT / "cache.json").exists() else None
+        except (ValueError, OSError):
+            # A corrupt cache must not permanently prevent recovery. Keep its
+            # bytes/kernel sets until a wholly validated replacement is ready.
+            previous = None
         if action == "restore":
             # UFW's own boot/reload hook cannot recursively take this lock. See main().
-            raise ValueError("restore must run through the dedicated offline path")
+            raise GuardError("restore must run through the dedicated offline path")
         value = download(previous) if action == "refresh" or previous is None or time.time() - previous["updated"] > 21600 else previous
         values = sets(value, settings.security.vpn_allow_cidrs)
         check_management(values)
@@ -304,7 +322,7 @@ def restore():
     A lost cache must not prevent the rest of UFW from protecting the host.
     """
     if os.geteuid() != 0:
-        raise ValueError("offline restoration requires root")
+        raise GuardError("offline restoration requires root")
     settings = load(privileged=True)
     if not settings.security.vpn_protection_enabled:
         apply_sets({n: [] for n in ("qng_deny4", "qng_deny6", "qng_allow4", "qng_allow6")})
@@ -332,7 +350,13 @@ def main():
             print(json.dumps(execute(args.action)))
     except Exception as exc:
         # Do not dump provider response bodies or tracebacks into public jobs.
-        print("QSecurity network protection failed: " + type(exc).__name__, file=sys.stderr)
+        if args.action == "refresh":
+            try:
+                save_status(load(privileged=True), cache(), phase="refresh failed; last valid lists retained")
+            except (ValueError, OSError):
+                pass
+        diagnostic = str(exc) if isinstance(exc, GuardError) else type(exc).__name__
+        print("QSecurity network protection failed: " + diagnostic, file=sys.stderr)
         raise SystemExit(1) from None
 
 

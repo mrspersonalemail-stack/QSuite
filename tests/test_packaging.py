@@ -15,7 +15,7 @@ def test_package_builder_normalizes_writable_umask(tmp_path, monkeypatch):
     builder = module("qsuite_deb_builder", "build-deb.py")
     wheels = tmp_path / "wheels"
     wheels.mkdir()
-    (wheels / "qsuite-1.0.0-py3-none-any.whl").write_bytes(b"isolated fixture, not an installable wheel")
+    (wheels / "qsuite-1.1.0-py3-none-any.whl").write_bytes(b"isolated fixture, not an installable wheel")
 
     def fake_build(argv, **kwargs):
         staging = Path(argv[-2])
@@ -27,7 +27,7 @@ def test_package_builder_normalizes_writable_umask(tmp_path, monkeypatch):
     monkeypatch.setattr(builder.subprocess, "run", fake_build)
     before = os.umask(0o002)
     try:
-        output = builder.build(wheels, tmp_path / "out", "amd64", 14, "1.0.0")
+        output = builder.build(wheels, tmp_path / "out", "amd64", 14, "1.1.0")
     finally:
         os.umask(before)
     assert output.with_suffix(".deb.sha256").is_file()
@@ -223,11 +223,11 @@ def test_wheel_record_exception_cannot_allow_writable_code():
         entry = SimpleNamespace(filename=name, external_attr=mode << 16)
         return SimpleNamespace(infolist=lambda: [entry])
 
-    assert not inspector.unsafe_wheel_modes(archive("qsuite-1.0.0.dist-info/RECORD", 0o100664), "1.0.0")
-    assert not inspector.unsafe_wheel_modes(archive("qsuite/api.py", 0o100644), "1.0.0")
-    assert inspector.unsafe_wheel_modes(archive("qsuite-1.0.0.dist-info/RECORD", 0o100666), "1.0.0")
-    assert inspector.unsafe_wheel_modes(archive("qsuite/api.py", 0o100664), "1.0.0")
-    assert inspector.unsafe_wheel_modes(archive("qsuite-0.0.0.dist-info/RECORD", 0o100664), "1.0.0")
+    assert not inspector.unsafe_wheel_modes(archive("qsuite-1.1.0.dist-info/RECORD", 0o100664), "1.1.0")
+    assert not inspector.unsafe_wheel_modes(archive("qsuite/api.py", 0o100644), "1.1.0")
+    assert inspector.unsafe_wheel_modes(archive("qsuite-1.1.0.dist-info/RECORD", 0o100666), "1.1.0")
+    assert inspector.unsafe_wheel_modes(archive("qsuite/api.py", 0o100664), "1.1.0")
+    assert inspector.unsafe_wheel_modes(archive("qsuite-0.0.0.dist-info/RECORD", 0o100664), "1.1.0")
 
 
 def test_new_runtime_clears_inherited_acl_before_becoming_readable(tmp_path, monkeypatch):

@@ -67,7 +67,7 @@ def qualify(package, report):
     opt.chmod(0o755)
     package = package.resolve(strict=True)
     require(sys.version_info.minor in {12, 14}
-            and package.name == f"qsuite_1.0.0_py3{sys.version_info.minor}_amd64.deb",
+            and package.name == f"qsuite_1.1.0_py3{sys.version_info.minor}_amd64.deb",
             "wrong qualification target")
     evidence = {"os": platform.freedesktop_os_release()["PRETTY_NAME"],
                 "python": platform.python_version(), "architecture": platform.machine(),
@@ -85,7 +85,7 @@ def qualify(package, report):
             os.umask(before)
 
     install_package()
-    require(run("qsuite", "version").strip() == "1.0.0", "CLI version mismatch")
+    require(run("qsuite", "version").strip() == "1.1.0", "CLI version mismatch")
     for name in [*UNITS, "qsuite-watchdog.service"]:
         info = (Path("/etc/systemd/system") / name).stat()
         require(info.st_uid == 0 and not info.st_mode & 0o022, "installed systemd unit is writable/unowned")
@@ -144,7 +144,7 @@ def qualify(package, report):
         raise RuntimeError("installed HTTPS service did not become healthy")
 
     ready()
-    require(json.loads(request("/api/v1/health")[2])["version"] == "1.0.0", "API version mismatch")
+    require(json.loads(request("/api/v1/health")[2])["version"] == "1.1.0", "API version mismatch")
     status, headers, body = request("/login")
     require(status == 200 and "text/html" in headers["Content-Type"] and b"QSuite" in body,
             "installed login document unavailable")
@@ -173,6 +173,8 @@ def qualify(package, report):
     require(json.loads(request("/api/v1/auth/me")[2])["role"] == "owner", "reinstall lost account/session")
     require(request("/api/v1/auth/logout", {}, csrf=True)[0] == 200, "authenticated logout failed")
     evidence["same_version_reinstall_resume_preservation"] = "pass"
+    run("/opt/qsuite/current/venv/bin/python", str(Path(__file__).with_name("qualify-network-guard.py").resolve()))
+    evidence["vpn_native_ipv4_ipv6_lifecycle"] = "pass; synthetic veth packets, exceptions, reload, disable, offline restore"
     run("dpkg", "--remove", "qsuite")
     run("dpkg", "--purge", "qsuite")
     require(config.read_bytes() == saved_config and key.read_bytes() == saved_key,

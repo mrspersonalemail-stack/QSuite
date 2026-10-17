@@ -15,8 +15,8 @@ It currently supports an already active UFW firewall on Debian/Ubuntu with `ipse
 4. Check the observed firewall state and feed timestamps in QSecurity. Disable
    through the same reviewed workflow. Disable before uninstalling this add-on.
 
-This uses `security.configure` and `packages.view`, existing CSRF, fresh
-authentication and WAN TOTP requirements. `security.view` permits viewing status.
+QSecurity is **Owner-only** in v1.1.0. This uses `security.configure` and `packages.view`, existing CSRF, fresh
+authentication and WAN TOTP requirements. `security.view` permits the Owner to view status.
 Restricted roles do not acquire firewall controls or source-IP list access.
 The privileged broker requests only a fixed systemd service, and retains its
 existing capability boundary. The dedicated network service has `CAP_NET_ADMIN`

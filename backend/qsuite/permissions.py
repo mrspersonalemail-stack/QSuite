@@ -147,6 +147,21 @@ PRESETS = {
     "operator": OPERATE,
     "viewer": READ,
 }
+OWNER_ONLY = {p for p in CATALOGUE if p.startswith("security.")} | {"logs.security.read"}
+ADMIN_ONLY = {p for p in CATALOGUE if p.startswith(("incident.", "admin_news."))}
+
+
+def role_boundary(role, permissions):
+    """Role ceilings also apply to saved legacy/custom grants and live sessions."""
+    values = {ALIASES.get(p, p) for p in permissions} & CATALOGUE
+    if role != "owner":
+        values -= OWNER_ONLY
+    if role not in {"owner", "admin", "administrator"}:
+        values -= ADMIN_ONLY
+    return expanded(values)
+
+
+PRESETS = {name: role_boundary(name, values) & CATALOGUE for name, values in PRESETS.items()}
 ROLES = {name: expanded(values) for name, values in PRESETS.items()}
 LEGACY_OPERATIONS = {
     "backup_validate": "backup.run", "restore_verify": "backup.restore", "incident": "incident.create",
@@ -158,12 +173,12 @@ LEGACY_OPERATIONS = {
 
 def resolve(db, name):
     rows = db.rows("SELECT permissions FROM roles WHERE name=?", (name,))
-    return expanded(json.loads(rows[0]["permissions"])) if rows else set()
+    return role_boundary(name, json.loads(rows[0]["permissions"])) if rows else set()
 
 
 def permitted(actor_or_role, permission: str) -> bool:
     values = (
-        actor_or_role.get("permissions", [])
+        role_boundary(actor_or_role.get("role"), actor_or_role.get("permissions", []))
         if isinstance(actor_or_role, dict)
         else ROLES.get(actor_or_role, set())
     )

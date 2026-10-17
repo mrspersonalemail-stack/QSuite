@@ -44,7 +44,7 @@ On the exact target Python minor/architecture with `dpkg-deb` available:
 mkdir -p dist/wheelhouse
 .venv/bin/pip download --require-hashes --only-binary=:all: \
   -r requirements.lock -d dist/wheelhouse
-cp dist/qsuite-1.0.0-py3-none-any.whl dist/wheelhouse/
+cp dist/qsuite-1.1.0-py3-none-any.whl dist/wheelhouse/
 .venv/bin/python scripts/build-deb.py --wheelhouse dist/wheelhouse \
   --architecture amd64 --python-minor 14 --output dist
 ```

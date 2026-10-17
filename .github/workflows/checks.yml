@@ -50,14 +50,14 @@ jobs:
           .venv/bin/python -m build
           mkdir -p dist/wheelhouse
           .venv/bin/pip download --require-hashes --only-binary=:all: -r requirements.lock -d dist/wheelhouse
-          cp dist/qsuite-1.0.0-py3-none-any.whl dist/wheelhouse/
+          cp dist/qsuite-1.1.0-py3-none-any.whl dist/wheelhouse/
           MINOR=$(python3 -c 'import sys; print(sys.version_info.minor)')
           .venv/bin/python scripts/build-deb.py --wheelhouse dist/wheelhouse --architecture amd64 --python-minor "$MINOR" --output dist
           dpkg-deb --info dist/*.deb
           dpkg-deb --contents dist/*.deb
           .venv/bin/python scripts/inspect-artifacts.py dist
           python3 -m venv .smoke-venv
-          .smoke-venv/bin/pip install --no-index --find-links dist/wheelhouse qsuite==1.0.0
+          .smoke-venv/bin/pip install --no-index --find-links dist/wheelhouse qsuite==1.1.0
           .smoke-venv/bin/python -I scripts/smoke-package.py
           .smoke-venv/bin/pip check
           (cd dist && sha256sum *.whl *.tar.gz *.deb > SHA256SUMS)
@@ -94,13 +94,13 @@ jobs:
       - name: Prepare fresh hosted VM dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-venv openssl ca-certificates
+          sudo apt-get install -y python3-venv openssl ca-certificates ufw ipset iproute2 iputils-ping
           cd qualified
           sha256sum -c SHA256SUMS
       - name: Qualify installed services and package lifecycle on disposable VM
         run: |
           sudo env RUNNER_ENVIRONMENT=github-hosted QSUITE_DISPOSABLE_QUALIFICATION=yes \
-            /usr/bin/python3 scripts/qualify-deb.py qualified/qsuite_1.0.0_py3${{ matrix.minor }}_amd64.deb \
+            /usr/bin/python3 scripts/qualify-deb.py qualified/qsuite_1.1.0_py3${{ matrix.minor }}_amd64.deb \
             --report "$GITHUB_WORKSPACE/qualification.json"
       - name: Service diagnostics on failure
         if: failure()

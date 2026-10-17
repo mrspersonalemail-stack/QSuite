@@ -9,7 +9,7 @@ from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import PASSWORD_MIN_LENGTH, hash_password, validate_password
-from .permissions import CATALOGUE, resolve
+from .permissions import ADMIN_ONLY, CATALOGUE, OWNER_ONLY, resolve
 
 
 class AccountBody(BaseModel):
@@ -170,8 +170,8 @@ def routes(app, db, auth, session, permission, source):
     def roles(actor=Depends(permission("users.view"))):
         rows = db.rows("SELECT * FROM roles ORDER BY builtin DESC,name")
         for row in rows:
-            row["permissions"] = json.loads(row["permissions"])
-        return {"roles": rows, "catalogue": sorted(CATALOGUE)}
+            row["permissions"] = sorted(resolve(db, row["name"]) & CATALOGUE)
+        return {"roles": rows, "catalogue": sorted(CATALOGUE - OWNER_ONLY - ADMIN_ONLY)}
 
     @app.put("/api/v1/roles/{name}")
     def put_role(
@@ -190,6 +190,8 @@ def routes(app, db, auth, session, permission, source):
             old = c.execute("SELECT builtin FROM roles WHERE name=?", (name,)).fetchone()
             if old and old[0]:
                 raise HTTPException(409, "preset roles are immutable; create a custom role")
+            if set(body.permissions) & (OWNER_ONLY | ADMIN_ONLY):
+                raise HTTPException(422, "QSecurity is Owner-only; incidents and Admin News require an Admin preset")
             c.execute(
                 "INSERT INTO roles VALUES(?,?,?,0) ON CONFLICT(name) DO UPDATE SET label=excluded.label,permissions=excluded.permissions",
                 (name, body.label, json.dumps(sorted(set(body.permissions)))),

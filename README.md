@@ -7,9 +7,9 @@ security observation, service operations and recovery workflows. QSuite brings
 common tasks into a responsive interface while keeping permissions and privileged
 operations on the server.
 
-**Current release:** [QSuite v1.0.0](https://github.com/mrspersonalemail-stack/QSuite/releases/tag/v1.0.0).
+**Current release:** [QSuite v1.1.0](https://github.com/mrspersonalemail-stack/QSuite/releases/tag/v1.1.0).
 Read the [installation guide](docs/installation.md) and
-[validation scope](docs/release-readiness.md). This project has not received an
+[validation scope](docs/release-readiness-v1.1.0.md). This project has not received an
 independent security audit or certification.
 
 Screenshots await an isolated browser review. Production screenshots are excluded
@@ -57,7 +57,7 @@ installing a locally downloaded package:
 
 ```sh
 sha256sum -c SHA256SUMS --ignore-missing
-sudo apt install ./qsuite_1.0.0_py314_amd64.deb
+sudo apt install ./qsuite_1.1.0_py314_amd64.deb
 qsuite version
 ```
 

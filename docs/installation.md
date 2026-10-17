@@ -2,12 +2,12 @@
 
 ## Qualification and requirements
 
-QSuite v1.0.0 release packages are qualified on:
+QSuite v1.1.0 release packages are qualified on:
 
 | System | Architecture | System Python | Package |
 | --- | --- | --- | --- |
-| Ubuntu 24.04 | amd64 | 3.12 | `qsuite_1.0.0_py312_amd64.deb` |
-| Ubuntu 26.04 | amd64 | 3.14 | `qsuite_1.0.0_py314_amd64.deb` |
+| Ubuntu 24.04 | amd64 | 3.12 | `qsuite_1.1.0_py312_amd64.deb` |
+| Ubuntu 26.04 | amd64 | 3.14 | `qsuite_1.1.0_py314_amd64.deb` |
 
 Both ran fresh installation, real systemd services, HTTPS/Owner login, package discovery,
 same-version reinstall/resume and data-preserving removal/purge on disposable hosted VMs.
@@ -26,7 +26,7 @@ private state, archives and optional scans. There is no signed APT repository.
 ## Install a verified package
 
 Obtain the matching package and `SHA256SUMS` from the
-[QSuite v1.0.0 release](https://github.com/mrspersonalemail-stack/QSuite/releases/tag/v1.0.0).
+[QSuite v1.1.0 release](https://github.com/mrspersonalemail-stack/QSuite/releases/tag/v1.1.0).
 Compare provenance through a trusted channel: a checksum downloaded from the same
 compromised source does not authenticate its publisher.
 
@@ -34,7 +34,7 @@ compromised source does not authenticate its publisher.
 python3 --version
 dpkg --print-architecture
 sha256sum -c SHA256SUMS --ignore-missing
-sudo apt install ./qsuite_1.0.0_py314_amd64.deb
+sudo apt install ./qsuite_1.1.0_py314_amd64.deb
 qsuite version
 ```
 

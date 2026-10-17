@@ -6,8 +6,8 @@ resolve current role/account state, and role/account changes revoke sessions.
 
 | Preset | Intended scope |
 | --- | --- |
-| Owner | Full catalogue and Owner-only policy/role/news controls |
-| Admin | Host operations, private information, downloads, scans, users within their grant scope and unprivileged terminal |
+| Owner | Full catalogue; exclusive QSecurity access, VPN/firewall configuration, scans, security logs and security policy |
+| Admin | Host operations, Incidents, Admin News, downloads, users within their grant scope and unprivileged terminal; no QSecurity access |
 | Mod | Game/Crafty status, player activity, public news sending, package and maintenance visibility |
 | Helper | Game/Crafty status, public news and permitted package visibility |
 | Log Viewer | Filtered Minecraft player activity only |
@@ -16,7 +16,13 @@ Mod/Helper/Log Viewer do not receive security/SSH, system inventory, private log
 backups, incidents, terminal, webhook settings or Admin News. Log Viewer does not
 mean unrestricted system-log access. Legacy `administrator`, `operator`, `viewer`
 are retained for compatibility and are broader than member presets; inspect them
-before assigning. New backup download permission is granted only to Owner/Admin
+before assigning. Starting with 1.1.0, QSecurity and security logs are Owner-only;
+Incidents and Admin News require Owner/Admin (including the legacy administrator
+alias). These role ceilings apply on every request to stored legacy/custom grants,
+so an existing session or custom permission assignment cannot bypass them.
+Reserved grants are not available in custom roles. Existing Admin News configuration
+and routing permissions are not broadened: ordinary Admins retain their view access.
+New backup download permission is granted only to Owner/Admin
 and the legacy administrator preset, not legacy operator/viewer.
 
 The authoritative catalogue and preset sets are in

@@ -1,9 +1,15 @@
-# Unreleased — 1.1.0 development
+# QSuite 1.1.0 — 17 October 2026
 
 - Optional QSecurity VPN/proxy firewall add-on, disabled by default. Reviewed
   settings toggle, IPv4/IPv6 UFW sets, fixed HTTPS feeds, offline cache restore,
   narrow exceptions and a separate network-privileged service. See
   [scope and limitations](docs/vpn-protection.md).
+- QSecurity and security logs are Owner-only, including VPN controls and direct
+  API/package access. Saved legacy/custom grants cannot bypass the role ceiling.
+  Incidents and Admin News remain available to Owner/Admin; lower roles cannot
+  obtain those reserved views through custom grants.
+- Regression tests for role ceilings, firewall configuration preservation, cached
+  feed failures and set rollback; disposable VM native IPv4/IPv6 packet qualification.
 
 # QSuite 1.0.0
 

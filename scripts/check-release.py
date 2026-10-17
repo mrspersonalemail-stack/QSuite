@@ -59,7 +59,7 @@ def check():
                     errors.append((path, "broken relative link: " + target))
     version_module = ast.parse((ROOT / "backend/qsuite/__init__.py").read_text())
     version = next(ast.literal_eval(n.value) for n in version_module.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "__version__" for t in n.targets))
-    if version != "1.0.0":
+    if version != "1.1.0":
         errors.append((ROOT / "backend/qsuite/__init__.py", "release version mismatch"))
     manifest = json.loads((ROOT / "frontend/vendor-manifest.json").read_text())
     for name, expected in manifest["files"].items():
