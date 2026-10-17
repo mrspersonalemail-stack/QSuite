@@ -82,6 +82,8 @@ def test_firewall_enable_disable_preserves_other_rules_and_is_idempotent(firewal
     assert len(calls) == first
     ng.firewall(False)
     assert all((root / name).read_text() == text for name, text in originals.items())
+    assert ["/usr/sbin/iptables", "-X", "ufw-qnetguard"] in calls
+    assert ["/usr/sbin/ip6tables", "-X", "ufw6-qnetguard"] in calls
 
 
 def test_firewall_native_validation_failure_restores_files(firewall_files, monkeypatch):

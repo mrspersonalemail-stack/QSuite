@@ -212,6 +212,13 @@ def firewall(enabled):
             run(["/usr/sbin/ufw", "reload"])
             if observed() != enabled:
                 raise GuardError("effective UFW VPN policy failed verification")
+            if not enabled:
+                # UFW flushes only its built-in list of framework chains. Its
+                # custom extension chains otherwise retain dangling ipset refs.
+                # After removing our input jumps, retire only our owned chains.
+                for program, chain in (("iptables", "ufw-qnetguard"), ("ip6tables", "ufw6-qnetguard")):
+                    run(["/usr/sbin/" + program, "-F", chain], required=False)
+                    run(["/usr/sbin/" + program, "-X", chain], required=False)
     except BaseException:
         for path, (text, mode) in old.items():
             atomic(path, text, mode)
