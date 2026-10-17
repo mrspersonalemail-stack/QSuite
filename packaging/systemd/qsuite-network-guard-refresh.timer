@@ -1,0 +1,12 @@
+[Unit]
+Description=Refresh QSecurity VPN and proxy feeds every six hours when enabled
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=6h
+RandomizedDelaySec=15min
+Persistent=true
+Unit=qsuite-network-guard-refresh.service
+
+[Install]
+WantedBy=timers.target

@@ -13,7 +13,7 @@ import subprocess
 import sys
 import time
 
-UNITS = ["qsuite-agent.service", "qsuite-helper.service", "qsecurity.service", "qsuite-watchdog.timer"]
+UNITS = ["qsuite-agent.service", "qsuite-helper.service", "qsecurity.service", "qsuite-watchdog.timer", "qsuite-network-guard-refresh.timer"]
 STATE = Path("/var/lib/qsuite-watchdog")
 
 

@@ -41,6 +41,10 @@ class TestAlert(Body):
 
 
 def routes(app, db, news, session, permission, source, read, queue):
+    @app.get("/api/v1/security/network-protection")
+    async def network_protection(actor=Depends(permission("security.view"))):
+        return await read("security.network.status")
+
     async def package(name, actor):
         if name in BUILTINS and not permitted(actor, BUILTINS[name].permission):
             raise HTTPException(403, "permission denied")

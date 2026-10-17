@@ -140,6 +140,10 @@ class Broker:
 
     def execute(self, operation: str, target: str = ""):
         s = self.settings
+        if operation == "security.network.status" and not target:
+            from .network_guard import status as network_status
+
+            return network_status(load(privileged=True))
         if operation in {"news.watchdog.configure", "news.watchdog.status"}:
             from .watchdog_news import configure, status as news_status
 

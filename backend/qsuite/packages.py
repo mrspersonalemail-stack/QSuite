@@ -318,6 +318,8 @@ class BackupConfig(PackageConfig):
 
 
 class SecurityConfig(PackageConfig):
+    vpn_protection_enabled: bool = Field(default=False, title="VPN and proxy protection")
+    vpn_allow_cidrs: list[str] = Field(default_factory=list, max_length=32, title="VPN false-positive exceptions")
     trusted_cidrs: list[str] = Field(max_length=32)
     trusted_countries: list[str] = Field(max_length=32)
     trusted_continents: list[str] = Field(max_length=8)

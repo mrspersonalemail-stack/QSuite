@@ -117,12 +117,13 @@ pages.backups=async()=>{
   confidence.append(actions);root.append(confidence);return root;
 };
 
-async function configurationForm(name) {
+async function configurationForm(name, selectedKeys=null) {
   const config=await api("packages/"+name+"/configuration");
   if(!config.available)return empty("Configuration unavailable",config.reason);
-  const n=card("Package settings"),form=el("form"),controls={};n.append(el("p",config.scope,"fine"));
+  const n=card(selectedKeys?"VPN & proxy protection settings":"Package settings"),form=el("form"),controls={};n.append(el("p",config.scope,"fine"));
   for(const [key,schema] of Object.entries(config.schema.properties)){
-    const value=config.values[key],label=key.replaceAll("_"," ");let control;
+    if(selectedKeys&&!selectedKeys.includes(key))continue;
+    const value=config.values[key],label=schema.title||key.replaceAll("_"," ");let control;
     if(schema.type==="boolean")control=toggle(label,value);
     else if(schema.enum)control=selectField(label,schema.enum.map(v=>[v,v]),value);
     else if(schema.type==="integer"){control=field(label,"number",value);control.input.min=schema.minimum??"";control.input.max=schema.maximum??"";control.input.step="1";}
@@ -133,11 +134,23 @@ async function configurationForm(name) {
   }
   const preview=el("div"),submit=el("button","Preview changes");submit.type="submit";form.append(submit,preview);n.append(form);
   form.onsubmit=async e=>{e.preventDefault();try{
-    const values={};for(const [key,{input,schema}] of Object.entries(controls))values[key]=schema.type==="boolean"?input.checked:schema.type==="integer"?Number(input.value):schema.type==="array"?input.value.split(/\n|,/).map(x=>x.trim()).filter(Boolean):schema.type==="object"?JSON.parse(input.value):input.value;
+    const values={...config.values};for(const [key,{input,schema}] of Object.entries(controls))values[key]=schema.type==="boolean"?input.checked:schema.type==="integer"?Number(input.value):schema.type==="array"?input.value.split(/\n|,/).map(x=>x.trim()).filter(Boolean):schema.type==="object"?JSON.parse(input.value):input.value;
     const diff=await api("packages/"+name+"/configuration/preview","POST",{values});preview.replaceChildren(el("h3","Review before applying"),table(["Setting","Before","After"],diff.changes.map(k=>[k,JSON.stringify(diff.before[k]),JSON.stringify(diff.after[k])])),el("p","Applies to: "+diff.applies_to,"fine"));
     const apply=button("Apply reviewed changes",async()=>{if(!await confirmAction("Apply configuration","Apply these validated settings to "+name+"? A rollback copy will be retained."))return;await fresh();await api("packages/"+name+"/configuration/apply","POST",{values,expected:diff.expected});notice("Configuration verified and saved.","success");render();});preview.append(apply);
   }catch(error){notice(error.message,"error");}};return n;
 }
+const securityOverview=pages.security;
+pages.security=async()=>{
+  const root=await securityOverview(),panel=card("VPN & proxy protection"),state=await api("security/network-protection");
+  panel.append(badge(state.enabled?"ENABLED":"DISABLED"),row("Firewall · last observed",state.active?"Blocking known exits":"Not active"),row("Feed state",state.phase),row("Last successful update",date(state.updated)),row("Firewall observation",date(state.observed)));
+  panel.append(el("p","Optional QSecurity add-on. Disabled by default. Drops listed VPN, open-proxy and Tor exit sources at the host firewall before applications receive them. IPv4 and IPv6 are covered.","muted"));
+  panel.append(el("p",state.limitations+" This cannot prevent packets reaching your internet connection or replace upstream DDoS protection.","callout"));
+  if(!state.available)panel.append(el("p","Install the QSuite network guard units, UFW and ipset before enabling. QSuite will not enable or reset UFW for you.","callout"));
+  for(const [name,count] of Object.entries(state.feed_counts))panel.append(row(name.replaceAll("_"," ")+" entries",count));
+  root.prepend(panel);
+  if(can("security.configure")&&can("packages.view"))root.insertBefore(await configurationForm("qsecurity",["vpn_protection_enabled","vpn_allow_cidrs"]),panel.nextSibling);
+  return root;
+};
 pages.packages=async()=>{
   if(selectedPackage){const p=await api("packages/"+encodeURIComponent(selectedPackage)),root=el("div"),n=card(p.label);n.append(button("← All packages",()=>{selectedPackage=null;render();}),el("p",p.help,"muted"),badge(p.installed?"INSTALLED":"NOT INSTALLED"),el("div","Version: "+p.version,"fine"),dataView(p.status));
     const actions=el("div",undefined,"actions");for(const [id,a] of Object.entries(p.actions)){const b=button(a.label,async()=>{if(a.confirmation&&!await confirmAction(a.label,a.confirmation,a.label))return;if(a.fresh_auth)await fresh();const result=await api("packages/"+p.name+"/actions/"+id,"POST",{});notice("Action queued · "+result.job);await watchJob(result.job);});b.disabled=!p.installed;actions.append(b);}n.append(actions);root.append(n);

@@ -11,6 +11,7 @@ Start with **Installation → Getting started → Access modes**. Commands marke
 | [Architecture](architecture.md) | Processes, storage and trust boundaries |
 | [Packages](packages.md) | All 13 modules and optional adapters |
 | [QSecurity](qsecurity.md) | Observation, severity, collectors and limitations |
+| [VPN/proxy protection](vpn-protection.md) | Optional QSecurity firewall add-on; off by default |
 | [Permissions](permissions.md) | Presets, custom roles and backend checks |
 | [Notifications](notifications.md) | Public/private news, delivery and mentions |
 | [Access modes](access-modes.md) | Loopback LAN, WAN and certificate policy |

@@ -3,6 +3,7 @@ Version: @VERSION@
 Architecture: @ARCH@
 Maintainer: QSuite contributors
 Depends: python3 (@PYMIN@), python3 (@PYMAX@), python3-venv, ca-certificates, openssl, systemd
+Suggests: ufw, ipset
 Section: admin
 Priority: optional
 Description: QSuite authenticated server management foundations

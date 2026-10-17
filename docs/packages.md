@@ -36,7 +36,9 @@ retain their own logs and schedules; QSuite does not install or overwrite them.
    Optimistic revisions reject stale previews; failed verification attempts rollback.
 
 Typed settings currently cover performance, backup **validation** schedule,
-security trust/risk policy, SMART monitor policy and maintenance text. Configuration
+security trust/risk policy and optional [VPN/proxy protection](vpn-protection.md),
+SMART monitor policy and maintenance text. VPN/proxy protection is disabled by default.
+Configuration
 permissions are separate from view/action permissions. No arbitrary shell command
 can be supplied by a manifest. Manifests may only reuse reviewed capabilities.
 

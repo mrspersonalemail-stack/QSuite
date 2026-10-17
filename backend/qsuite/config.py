@@ -31,6 +31,8 @@ class Integration(StrictModel):
 
 
 class SecurityPolicy(StrictModel):
+    vpn_protection_enabled: bool = Field(default=False, strict=True)
+    vpn_allow_cidrs: list[str] = Field(default_factory=list, max_length=32)
     trusted_cidrs: list[str] = Field(default_factory=lambda: ["127.0.0.0/8", "::1/128"])
     trusted_countries: list[str] = Field(default_factory=list)
     trusted_continents: list[str] = Field(default_factory=list)
@@ -111,6 +113,10 @@ class Settings(StrictModel):
             raise ValueError("WAN requires production and explicit TLS files")
         for cidr in self.security.trusted_cidrs:
             ipaddress.ip_network(cidr, strict=True)
+        for cidr in self.security.vpn_allow_cidrs:
+            network = ipaddress.ip_network(cidr, strict=True)
+            if network.prefixlen < (24 if network.version == 4 else 48):
+                raise ValueError("VPN exceptions must be /24 or narrower for IPv4, /48 for IPv6")
         if len(self.security.trusted_cidrs) > 32 or any(not re.fullmatch(r"[A-Z]{2}", c) for c in self.security.trusted_countries):
             raise ValueError("invalid trusted networks or country codes")
         if any(c not in {"AF", "AN", "AS", "EU", "NA", "OC", "SA"} for c in self.security.trusted_continents):

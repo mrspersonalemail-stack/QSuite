@@ -16,6 +16,8 @@ fail2ban = "fail2ban.service"
 # Optional adapters are disabled until audited. No Minecraft assumption is made.
 
 [security]
+vpn_protection_enabled = false
+vpn_allow_cidrs = []
 trusted_cidrs = ["127.0.0.0/8", "::1/128"]
 trusted_countries = []
 trusted_continents = []

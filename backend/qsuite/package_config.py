@@ -152,6 +152,8 @@ def operation(config_path, request, apply=False, *, runner=None, timer_root=Path
         "changes": [k for k in after if before.get(k) != after[k]],
         "applies_to": timer or "native QSuite configuration",
     }
+    if package == "qsecurity" and any(k in result["changes"] for k in ("vpn_protection_enabled", "vpn_allow_cidrs")):
+        result["applies_to"] = "UFW host firewall: all inbound ports, IPv4 and IPv6"
     if not apply:
         return result
     if request.get("expected") != revision:
@@ -218,6 +220,8 @@ def operation(config_path, request, apply=False, *, runner=None, timer_root=Path
             validated = load(path, privileged=True)
             if current(validated, package) != after:
                 raise ValueError("persisted configuration failed verification")
+            if package == "qsecurity" and any(k in result["changes"] for k in ("vpn_protection_enabled", "vpn_allow_cidrs")):
+                runner(["/usr/bin/systemctl", "start", "qsuite-network-guard.service"])
         except BaseException:
             atomic(path, config_before)
             if perf_path:
@@ -236,6 +240,8 @@ def operation(config_path, request, apply=False, *, runner=None, timer_root=Path
                     dropin.unlink(missing_ok=True)
                 runner(["/usr/bin/systemctl", "daemon-reload"])
                 runner(["/usr/bin/systemctl", "restart", timer])
+            if package == "qsecurity" and any(k in result["changes"] for k in ("vpn_protection_enabled", "vpn_allow_cidrs")):
+                runner(["/usr/bin/systemctl", "start", "qsuite-network-guard.service"])
             raise
     return result | {
         "applied": True,

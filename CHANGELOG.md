@@ -1,3 +1,10 @@
+# Unreleased — 1.1.0 development
+
+- Optional QSecurity VPN/proxy firewall add-on, disabled by default. Reviewed
+  settings toggle, IPv4/IPv6 UFW sets, fixed HTTPS feeds, offline cache restore,
+  narrow exceptions and a separate network-privileged service. See
+  [scope and limitations](docs/vpn-protection.md).
+
 # QSuite 1.0.0
 
 Initial public release — 16 October 2026. See the [validation record](docs/release-readiness.md).

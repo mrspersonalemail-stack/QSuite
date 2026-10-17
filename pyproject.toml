@@ -22,6 +22,7 @@ qsuite-agent = "qsuite.api:main"
 qsuite-helper = "qsuite.helper:main"
 qsecurity = "qsuite.security:main"
 qsuite-watchdog = "qsuite.watchdog:main"
+qsuite-network-guard = "qsuite.network_guard:main"
 
 [tool.setuptools.packages.find]
 where = ["backend"]

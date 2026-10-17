@@ -1,0 +1,29 @@
+[Unit]
+Description=QSecurity optional VPN and proxy firewall policy
+After=local-fs.target network-online.target ufw.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+Environment=QSUITE_CONFIG=/etc/qsuite/config.toml
+Environment=PYTHONNOUSERSITE=1
+ExecStart=/opt/qsuite/current/venv/bin/qsuite-network-guard reconcile
+TimeoutStartSec=180
+UMask=0077
+StateDirectory=qsecurity/network-guard
+StateDirectoryMode=0700
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+ReadWritePaths=/etc/ufw /run /etc/systemd/system/timers.target.wants
+MemoryMax=192M
+TasksMax=32
+LimitCORE=0
